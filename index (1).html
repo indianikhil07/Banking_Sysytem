@@ -1,0 +1,784 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ledger &amp; Vault — Bank</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700;9..144,900&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#0e1b14;
+    --ink-soft:#16261c;
+    --ink-line:#2a3b30;
+    --paper:#f4efe3;
+    --paper-dim:#e9e2d0;
+    --brass:#b98b3e;
+    --brass-bright:#d6a75a;
+    --sage:#6f8d76;
+    --line:#c9bfa8;
+    --danger:#9a4a3f;
+    --danger-soft:#3a2420;
+    --ok:#5b7a5e;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(1200px 800px at 15% -10%, #17281d 0%, transparent 60%),
+      var(--ink);
+    color:var(--paper);
+    font-family:'Inter',sans-serif;
+    min-height:100vh;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    padding:48px 20px 80px;
+  }
+  .brandline{
+    display:flex;
+    align-items:baseline;
+    gap:14px;
+    margin-bottom:6px;
+  }
+  .brandline .mark{
+    font-family:'Fraunces',serif;
+    font-weight:900;
+    font-size:15px;
+    letter-spacing:.28em;
+    color:var(--brass-bright);
+    text-transform:uppercase;
+  }
+  h1{
+    font-family:'Fraunces',serif;
+    font-weight:700;
+    font-size:clamp(32px,5vw,52px);
+    margin:0 0 6px;
+    letter-spacing:-0.01em;
+  }
+  .tagline{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:13px;
+    color:var(--sage);
+    margin-bottom:40px;
+    letter-spacing:.02em;
+  }
+
+  .app{
+    width:100%;
+    max-width:760px;
+  }
+
+  /* tabs styled as passbook tabs */
+  .tabs{
+    display:flex;
+    gap:0;
+    margin-bottom:-1px;
+    position:relative;
+    z-index:2;
+  }
+  .tab{
+    font-family:'Fraunces',serif;
+    font-weight:600;
+    font-size:16px;
+    color:var(--sage);
+    background:var(--ink-soft);
+    border:1px solid var(--ink-line);
+    border-bottom:none;
+    padding:14px 26px 16px;
+    border-radius:10px 10px 0 0;
+    cursor:pointer;
+    transition:color .15s ease, background .15s ease;
+  }
+  .tab + .tab{margin-left:6px;}
+  .tab.active{
+    color:var(--ink);
+    background:var(--paper);
+    border-color:var(--paper);
+  }
+  .tab:not(.active):hover{color:var(--paper);}
+
+  .ledger{
+    background:var(--paper);
+    color:var(--ink);
+    border-radius:0 12px 12px 12px;
+    padding:38px 40px 32px;
+    position:relative;
+    box-shadow:0 30px 60px -20px rgba(0,0,0,.55);
+  }
+  .ledger::before{
+    content:"";
+    position:absolute;
+    left:40px; right:40px; top:78px;
+    height:0;
+    border-top:1px dashed var(--line);
+  }
+
+  .section-title{
+    font-family:'Fraunces',serif;
+    font-weight:700;
+    font-size:22px;
+    margin:0 0 24px;
+  }
+
+  .field{margin-bottom:16px;}
+  .field label{
+    display:block;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    color:#6b6153;
+    margin-bottom:6px;
+  }
+  .field input{
+    width:100%;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:16px;
+    padding:11px 12px;
+    border:1px solid var(--line);
+    border-radius:6px;
+    background:#fffdf8;
+    color:var(--ink);
+    outline:none;
+    transition:border-color .15s ease, box-shadow .15s ease;
+  }
+  .field input:focus{
+    border-color:var(--brass);
+    box-shadow:0 0 0 3px rgba(185,139,62,.18);
+  }
+
+  .row{display:flex; gap:14px;}
+  .row .field{flex:1;}
+
+  .btn{
+    font-family:'Fraunces',serif;
+    font-weight:600;
+    font-size:15px;
+    color:var(--paper);
+    background:var(--ink);
+    border:none;
+    padding:12px 22px;
+    border-radius:7px;
+    cursor:pointer;
+    transition:background .15s ease, transform .1s ease;
+  }
+  .btn:hover{background:#243729;}
+  .btn:active{transform:translateY(1px);}
+  .btn.brass{background:var(--brass);color:var(--ink);}
+  .btn.brass:hover{background:var(--brass-bright);}
+  .btn.danger{background:var(--danger);color:#fbeae6;}
+  .btn.danger:hover{background:#b15a4c;}
+  .btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line);}
+  .btn.ghost:hover{background:var(--paper-dim);}
+  .btn:disabled{opacity:.45; cursor:not-allowed;}
+
+  .btn-row{display:flex; gap:10px; flex-wrap:wrap; margin-top:6px;}
+
+  .menu-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:12px;
+    margin-bottom:6px;
+  }
+  .menu-card{
+    text-align:left;
+    border:1px solid var(--line);
+    background:#fffdf8;
+    border-radius:8px;
+    padding:16px 16px 14px;
+    cursor:pointer;
+    transition:border-color .15s ease, transform .1s ease;
+  }
+  .menu-card:hover{border-color:var(--brass); transform:translateY(-1px);}
+  .menu-card .num{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    color:var(--brass);
+    letter-spacing:.08em;
+  }
+  .menu-card .title{
+    font-family:'Fraunces',serif;
+    font-weight:600;
+    font-size:17px;
+    margin-top:4px;
+  }
+  .menu-card .desc{
+    font-family:'Inter',sans-serif;
+    font-size:12.5px;
+    color:#6b6153;
+    margin-top:3px;
+  }
+
+  .msg{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:13px;
+    padding:10px 12px;
+    border-radius:6px;
+    margin-bottom:16px;
+    display:none;
+  }
+  .msg.show{display:block;}
+  .msg.ok{background:#eaf0e8; color:var(--ok); border:1px solid #c7d8c5;}
+  .msg.err{background:#f6e6e2; color:var(--danger); border:1px solid #e2bcb0;}
+
+  .lockout{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:13px;
+    background:var(--danger-soft);
+    color:#f0c9bf;
+    border:1px solid #5c352e;
+    border-radius:6px;
+    padding:12px 14px;
+    margin-bottom:16px;
+  }
+
+  /* passbook balance display */
+  .balance-stamp{
+    display:inline-flex;
+    flex-direction:column;
+    align-items:flex-start;
+    border:2px solid var(--ink);
+    border-radius:8px;
+    padding:14px 20px;
+    margin:6px 0 18px;
+    transform:rotate(-0.6deg);
+  }
+  .balance-stamp .lbl{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:10px;
+    letter-spacing:.1em;
+    text-transform:uppercase;
+    color:#6b6153;
+  }
+  .balance-stamp .val{
+    font-family:'Fraunces',serif;
+    font-weight:900;
+    font-size:34px;
+    color:var(--ink);
+  }
+
+  /* receipt / activity trail */
+  .trail{
+    margin-top:26px;
+    border-top:1px dashed var(--line);
+    padding-top:16px;
+  }
+  .trail-title{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    color:#6b6153;
+    margin-bottom:10px;
+  }
+  .entry{
+    display:flex;
+    justify-content:space-between;
+    align-items:baseline;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:12.5px;
+    padding:7px 0;
+    border-bottom:1px solid #e6ddc8;
+    gap:10px;
+  }
+  .entry .who{color:var(--ink); font-weight:600;}
+  .entry .what{color:#6b6153; flex:1;}
+  .entry .stamp{
+    color:var(--brass);
+    font-weight:600;
+    white-space:nowrap;
+  }
+  .empty-trail{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:12.5px;
+    color:#8a8069;
+    font-style:italic;
+  }
+
+  .table-wrap{margin-top:6px;}
+  table{width:100%; border-collapse:collapse; font-family:'IBM Plex Mono',monospace; font-size:13px;}
+  th,td{text-align:left; padding:9px 10px; border-bottom:1px solid #e6ddc8;}
+  th{color:#6b6153; font-weight:600; font-size:11px; text-transform:uppercase; letter-spacing:.06em;}
+  td.amt{text-align:right; font-weight:600;}
+
+  .back-link{
+    margin-top:18px;
+    background:none;
+    border:none;
+    color:#8a8069;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:12px;
+    cursor:pointer;
+    padding:0;
+    text-decoration:underline;
+  }
+
+  footer{
+    margin-top:44px;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    color:#4a5c50;
+    text-align:center;
+  }
+
+  @media (max-width:520px){
+    .ledger{padding:28px 22px 26px;}
+    .menu-grid{grid-template-columns:1fr;}
+    .row{flex-direction:column;}
+  }
+</style>
+</head>
+<body>
+
+  <div class="brandline"><span class="mark">Est. Local Storage</span></div>
+  <h1>Ledger &amp; Vault</h1>
+  <div class="tagline">a small bank that lives entirely in this browser tab</div>
+
+  <div class="app">
+    <div class="tabs">
+      <button class="tab active" id="tab-customer" onclick="switchRole('customer')">Customer</button>
+      <button class="tab" id="tab-manager" onclick="switchRole('manager')">Manager</button>
+    </div>
+    <div class="ledger" id="ledger">
+      <!-- content injected by JS -->
+    </div>
+  </div>
+
+  <footer>Balances are stored only in this browser's local storage. Nothing is sent anywhere.</footer>
+
+<script>
+/* ---------------------------------------------------------
+   Data layer — mirrors the original Python Bank class:
+   register: { name: { password, balance } }
+   Everything persists to localStorage so a refresh doesn't
+   wipe the "bank".
+---------------------------------------------------------- */
+const STORAGE_KEY = 'ledger_vault_register';
+const MANAGER_CODE = '234';
+const MAX_ATTEMPTS = 3;
+const LOCKOUT_SECONDS = 5;
+
+function loadRegister(){
+  try{
+    return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
+  }catch(e){ return {}; }
+}
+function saveRegister(reg){
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(reg));
+}
+
+let register = loadRegister();
+let role = 'customer';
+let attempts = {}; // per-account failed attempt counter this session
+let lockUntil = {}; // per-account epoch ms when lockout ends
+let activity = []; // in-memory receipt trail for this session
+
+function nowStamp(){
+  return new Date().toLocaleString(undefined, {
+    weekday:'short', month:'short', day:'numeric',
+    hour:'2-digit', minute:'2-digit', second:'2-digit'
+  });
+}
+function logEntry(who, what){
+  activity.unshift({who, what, stamp: nowStamp()});
+  if(activity.length > 8) activity.pop();
+}
+function money(n){
+  return '$' + Number(n).toFixed(2);
+}
+
+const ledgerEl = document.getElementById('ledger');
+
+function switchRole(r){
+  role = r;
+  document.getElementById('tab-customer').classList.toggle('active', r==='customer');
+  document.getElementById('tab-manager').classList.toggle('active', r==='manager');
+  renderMenu();
+}
+
+function renderMenu(){
+  if(role === 'customer'){
+    ledgerEl.innerHTML = `
+      <div class="section-title">What would you like to do?</div>
+      <div class="menu-grid">
+        <button class="menu-card" onclick="renderOpenAccount()">
+          <div class="num">01</div>
+          <div class="title">Open account</div>
+          <div class="desc">Register a new passbook</div>
+        </button>
+        <button class="menu-card" onclick="renderDeposit()">
+          <div class="num">02</div>
+          <div class="title">Deposit</div>
+          <div class="desc">Add funds to an account</div>
+        </button>
+        <button class="menu-card" onclick="renderWithdraw()">
+          <div class="num">03</div>
+          <div class="title">Withdraw</div>
+          <div class="desc">Take funds out</div>
+        </button>
+        <button class="menu-card" onclick="renderDisplay()">
+          <div class="num">04</div>
+          <div class="title">Check balance</div>
+          <div class="desc">View your passbook</div>
+        </button>
+      </div>
+      ${renderTrail()}
+    `;
+  } else {
+    ledgerEl.innerHTML = `
+      <div class="section-title">Manager access</div>
+      <div class="field">
+        <label for="mgr-code">Manager code</label>
+        <input id="mgr-code" type="password" placeholder="Enter manager code" onkeydown="if(event.key==='Enter')checkManager()">
+      </div>
+      <div id="mgr-msg"></div>
+      <div class="btn-row">
+        <button class="btn brass" onclick="checkManager()">Enter</button>
+      </div>
+    `;
+  }
+}
+
+function renderTrail(){
+  if(activity.length === 0){
+    return `<div class="trail"><div class="trail-title">Recent activity</div><div class="empty-trail">No transactions yet this session.</div></div>`;
+  }
+  const rows = activity.map(a => `
+    <div class="entry">
+      <span class="who">${escapeHtml(a.who)}</span>
+      <span class="what">${escapeHtml(a.what)}</span>
+      <span class="stamp">${a.stamp}</span>
+    </div>
+  `).join('');
+  return `<div class="trail"><div class="trail-title">Recent activity</div>${rows}</div>`;
+}
+
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, c => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  }[c]));
+}
+
+function backButton(){
+  return `<button class="back-link" onclick="renderMenu()">&larr; back to menu</button>`;
+}
+
+/* ---------------- Open account ---------------- */
+function renderOpenAccount(){
+  ledgerEl.innerHTML = `
+    <div class="section-title">Open an account</div>
+    <div class="field">
+      <label for="oa-name">Name</label>
+      <input id="oa-name" type="text" placeholder="Full name">
+    </div>
+    <div class="row">
+      <div class="field">
+        <label for="oa-pass">Password</label>
+        <input id="oa-pass" type="password" placeholder="Choose a password">
+      </div>
+      <div class="field">
+        <label for="oa-open">Opening balance</label>
+        <input id="oa-open" type="number" step="0.01" min="0" placeholder="0.00">
+      </div>
+    </div>
+    <div id="oa-msg"></div>
+    <div class="btn-row">
+      <button class="btn brass" onclick="doOpenAccount()">Open account</button>
+    </div>
+    ${backButton()}
+  `;
+}
+function doOpenAccount(){
+  const name = document.getElementById('oa-name').value.trim();
+  const pass = document.getElementById('oa-pass').value;
+  const open = parseFloat(document.getElementById('oa-open').value);
+  const msg = document.getElementById('oa-msg');
+
+  if(!name || !pass || isNaN(open) || open < 0){
+    showMsg(msg, 'err', 'Fill in a name, password, and a valid opening balance.');
+    return;
+  }
+  if(register[name]){
+    showMsg(msg, 'err', 'An account with that name already exists.');
+    return;
+  }
+  register[name] = { password: pass, balance: open };
+  saveRegister(register);
+  logEntry(name, `opened account with ${money(open)}`);
+  showMsg(msg, 'ok', `Account opened for ${name}. Thank you for using our service — ${nowStamp()}.`);
+}
+
+/* ---------------- Password gate (shared by deposit/withdraw/display) ---------------- */
+function attemptsKey(name){ return name; }
+
+function checkLockout(name){
+  const until = lockUntil[attemptsKey(name)];
+  if(until && Date.now() < until){
+    return Math.ceil((until - Date.now())/1000);
+  }
+  return 0;
+}
+
+function registerFailure(name, msgEl, onLocked){
+  const key = attemptsKey(name);
+  attempts[key] = (attempts[key]||0) + 1;
+  if(attempts[key] >= MAX_ATTEMPTS){
+    lockUntil[key] = Date.now() + LOCKOUT_SECONDS*1000;
+    attempts[key] = 0;
+    onLocked && onLocked();
+  } else {
+    showMsg(msgEl, 'err', `Invalid password. ${MAX_ATTEMPTS - attempts[key]} attempt(s) left.`);
+  }
+}
+
+/* ---------------- Deposit ---------------- */
+function renderDeposit(){
+  ledgerEl.innerHTML = `
+    <div class="section-title">Deposit</div>
+    <div class="field">
+      <label for="dp-name">Name</label>
+      <input id="dp-name" type="text" placeholder="Account name">
+    </div>
+    <div id="dp-gate"></div>
+    <div id="dp-msg"></div>
+    <div class="btn-row">
+      <button class="btn brass" onclick="loadDepositGate()">Continue</button>
+    </div>
+    ${backButton()}
+  `;
+}
+function loadDepositGate(){
+  const name = document.getElementById('dp-name').value.trim();
+  const msg = document.getElementById('dp-msg');
+  const gate = document.getElementById('dp-gate');
+  if(!register[name]){
+    showMsg(msg, 'err', 'No account found with that name.');
+    gate.innerHTML = '';
+    return;
+  }
+  showMsg(msg, '', '');
+  const remain = checkLockout(name);
+  if(remain > 0){
+    gate.innerHTML = `<div class="lockout">Too many failed attempts. Try again in ${remain}s.</div>`;
+    return;
+  }
+  gate.innerHTML = `
+    <div class="row">
+      <div class="field">
+        <label for="dp-pass">Password</label>
+        <input id="dp-pass" type="password" placeholder="Password">
+      </div>
+      <div class="field">
+        <label for="dp-amt">Amount</label>
+        <input id="dp-amt" type="number" step="0.01" min="0" placeholder="0.00">
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn brass" onclick="doDeposit('${escapeHtml(name).replace(/'/g,"\\'")}')">Deposit</button>
+    </div>
+  `;
+}
+function doDeposit(name){
+  const pass = document.getElementById('dp-pass').value;
+  const amt = parseFloat(document.getElementById('dp-amt').value);
+  const msg = document.getElementById('dp-msg');
+
+  if(register[name].password !== pass){
+    registerFailure(name, msg, () => loadDepositGate());
+    return;
+  }
+  if(isNaN(amt) || amt <= 0){
+    showMsg(msg, 'err', 'Enter a valid amount.');
+    return;
+  }
+  register[name].balance += amt;
+  saveRegister(register);
+  logEntry(name, `deposited ${money(amt)}`);
+  showMsg(msg, 'ok', `${money(amt)} added. New balance: ${money(register[name].balance)} — ${nowStamp()}.`);
+  document.getElementById('dp-gate').innerHTML = '';
+}
+
+/* ---------------- Withdraw ---------------- */
+function renderWithdraw(){
+  ledgerEl.innerHTML = `
+    <div class="section-title">Withdraw</div>
+    <div class="field">
+      <label for="wd-name">Name</label>
+      <input id="wd-name" type="text" placeholder="Account name">
+    </div>
+    <div id="wd-gate"></div>
+    <div id="wd-msg"></div>
+    <div class="btn-row">
+      <button class="btn brass" onclick="loadWithdrawGate()">Continue</button>
+    </div>
+    ${backButton()}
+  `;
+}
+function loadWithdrawGate(){
+  const name = document.getElementById('wd-name').value.trim();
+  const msg = document.getElementById('wd-msg');
+  const gate = document.getElementById('wd-gate');
+  if(!register[name]){
+    showMsg(msg, 'err', 'No account found with that name.');
+    gate.innerHTML = '';
+    return;
+  }
+  showMsg(msg, '', '');
+  const remain = checkLockout(name);
+  if(remain > 0){
+    gate.innerHTML = `<div class="lockout">Too many failed attempts. Try again in ${remain}s.</div>`;
+    return;
+  }
+  gate.innerHTML = `
+    <div class="row">
+      <div class="field">
+        <label for="wd-pass">Password</label>
+        <input id="wd-pass" type="password" placeholder="Password">
+      </div>
+      <div class="field">
+        <label for="wd-amt">Amount</label>
+        <input id="wd-amt" type="number" step="0.01" min="0" placeholder="0.00">
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn danger" onclick="doWithdraw('${escapeHtml(name).replace(/'/g,"\\'")}')">Withdraw</button>
+    </div>
+  `;
+}
+function doWithdraw(name){
+  const pass = document.getElementById('wd-pass').value;
+  const amt = parseFloat(document.getElementById('wd-amt').value);
+  const msg = document.getElementById('wd-msg');
+
+  if(register[name].password !== pass){
+    registerFailure(name, msg, () => loadWithdrawGate());
+    return;
+  }
+  if(isNaN(amt) || amt <= 0){
+    showMsg(msg, 'err', 'Enter a valid amount.');
+    return;
+  }
+  if(amt > register[name].balance){
+    showMsg(msg, 'err', 'Insufficient balance for this withdrawal.');
+    return;
+  }
+  register[name].balance -= amt;
+  saveRegister(register);
+  logEntry(name, `withdrew ${money(amt)}`);
+  showMsg(msg, 'ok', `${money(amt)} withdrawn. New balance: ${money(register[name].balance)} — ${nowStamp()}.`);
+  document.getElementById('wd-gate').innerHTML = '';
+}
+
+/* ---------------- Display balance ---------------- */
+function renderDisplay(){
+  ledgerEl.innerHTML = `
+    <div class="section-title">Check balance</div>
+    <div class="field">
+      <label for="ds-name">Name</label>
+      <input id="ds-name" type="text" placeholder="Account name">
+    </div>
+    <div id="ds-gate"></div>
+    <div id="ds-msg"></div>
+    <div class="btn-row">
+      <button class="btn brass" onclick="loadDisplayGate()">Continue</button>
+    </div>
+    ${backButton()}
+  `;
+}
+function loadDisplayGate(){
+  const name = document.getElementById('ds-name').value.trim();
+  const msg = document.getElementById('ds-msg');
+  const gate = document.getElementById('ds-gate');
+  if(!register[name]){
+    showMsg(msg, 'err', 'No account found with that name.');
+    gate.innerHTML = '';
+    return;
+  }
+  showMsg(msg, '', '');
+  const remain = checkLockout(name);
+  if(remain > 0){
+    gate.innerHTML = `<div class="lockout">Too many failed attempts. Try again in ${remain}s.</div>`;
+    return;
+  }
+  gate.innerHTML = `
+    <div class="field">
+      <label for="ds-pass">Password</label>
+      <input id="ds-pass" type="password" placeholder="Password">
+    </div>
+    <div class="btn-row">
+      <button class="btn brass" onclick="doDisplay('${escapeHtml(name).replace(/'/g,"\\'")}')">View</button>
+    </div>
+  `;
+}
+function doDisplay(name){
+  const pass = document.getElementById('ds-pass').value;
+  const msg = document.getElementById('ds-msg');
+  if(register[name].password !== pass){
+    registerFailure(name, msg, () => loadDisplayGate());
+    return;
+  }
+  showMsg(msg, '', '');
+  document.getElementById('ds-gate').innerHTML = `
+    <div class="balance-stamp">
+      <span class="lbl">${escapeHtml(name)} — balance</span>
+      <span class="val">${money(register[name].balance)}</span>
+    </div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#6b6153;">Viewed ${nowStamp()}</div>
+  `;
+}
+
+/* ---------------- Manager ---------------- */
+function checkManager(){
+  const code = document.getElementById('mgr-code').value;
+  const msg = document.getElementById('mgr-msg');
+  if(code === MANAGER_CODE){
+    renderManagerPanel();
+  } else {
+    showMsg(msg, 'err', 'Invalid manager code.');
+  }
+}
+function renderManagerPanel(){
+  const names = Object.keys(register);
+  const rows = names.map(n => `
+    <tr><td>${escapeHtml(n)}</td><td class="amt">${money(register[n].balance)}</td></tr>
+  `).join('');
+
+  ledgerEl.innerHTML = `
+    <div class="section-title">Manager panel</div>
+    <div class="menu-grid">
+      <div class="menu-card" style="cursor:default;">
+        <div class="num">TOTAL</div>
+        <div class="title">${names.length} account${names.length===1?'':'s'}</div>
+        <div class="desc">as of ${nowStamp()}</div>
+      </div>
+      <button class="menu-card" onclick="switchRole('manager')">
+        <div class="num">&larr;</div>
+        <div class="title">Re-enter code</div>
+        <div class="desc">Log out of manager view</div>
+      </button>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Account holder</th><th style="text-align:right;">Balance</th></tr></thead>
+        <tbody>
+          ${rows || '<tr><td colspan="2" style="color:#8a8069;font-style:italic;">No accounts opened yet.</td></tr>'}
+        </tbody>
+      </table>
+    </div>
+    ${renderTrail()}
+  `;
+}
+
+function showMsg(el, kind, text){
+  if(!el) return;
+  if(!text){ el.className = ''; el.innerHTML=''; return; }
+  el.className = 'msg show ' + kind;
+  el.textContent = text;
+}
+
+/* init */
+renderMenu();
+</script>
+</body>
+</html>
