@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Simple Bank</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="card">
+    <h1>Simple Bank</h1>
+
+    <div class="tabs" role="tablist">
+      <button type="button" data-mode="customer">Customer</button>
+      <button type="button" data-mode="manager">Manager</button>
+    </div>
+
+    <section id="customer-panel">
+      <div class="tabs small">
+        <button type="button" data-action="register">Open account</button>
+        <button type="button" data-action="deposit">Deposit</button>
+        <button type="button" data-action="withdraw">Withdraw</button>
+        <button type="button" data-action="display">Balance</button>
+      </div>
+
+      <form id="bank-form">
+        <label for="name">Name</label>
+        <input id="name" type="text" autocomplete="off" required>
+
+        <label for="password">Password</label>
+        <input id="password" type="password" autocomplete="off" required>
+
+        <div id="amount-field">
+          <label for="amount" id="amount-label">Amount</label>
+          <input id="amount" type="number" min="0" step="0.01">
+        </div>
+
+        <button type="submit" class="primary">Submit</button>
+      </form>
+    </section>
+
+    <section id="manager-panel" hidden>
+      <form id="manager-form">
+        <label for="manager-code">Manager code</label>
+        <input id="manager-code" type="password" autocomplete="off" required>
+        <button type="submit" class="primary">View accounts</button>
+      </form>
+      <div id="manager-output"></div>
+    </section>
+
+    <p id="message" class="message" role="status"></p>
+    <p class="note">Demo project: data is stored only in this browser. Do not use real passwords.</p>
+  </main>
+
+  <script src="script.js"></script>
+</body>
+</html>
